@@ -8,4 +8,5 @@ This is for configuring an iDRAC to use Active Directory as the authentication s
 # idrac_sso.ps1
 This is used, in conjunction with the racadm utility, to add a service account to active directory and use that account to generate a keytab.<br>
 This script must be run on a Windows server as the ktpass command is not available on desktop releases of Windows.  You must also have domain permissions to add accounts, modify accounts, and reset account passwords.<br>
-Passwords are randomly generated each time this script is run and the password is used for the domain account and the keytab.
+Passwords are randomly generated each time this script is run and the password is used for the domain account and the keytab.<br>
+You may need to manually upload the keytab if you are working with a v9 iDRAC.<br>
