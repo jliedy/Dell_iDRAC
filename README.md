@@ -1,5 +1,6 @@
 # Dell iDRAC Scripts
-Scripts that I've written to deal with the Dell iDRAC
+PowerShell scripts that I've written to deal with the Dell iDRAC
+I'm a bash scripter.  This is my first PowerShell script.  Don't judge me (out loud).
 
 # idrac_ad.ps1
 This is for configuring an iDRAC to use Active Directory as the authentication source.  This does not require any special domain permissions.
