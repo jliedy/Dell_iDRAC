@@ -29,6 +29,7 @@ if ($adGroups.length -ne $adGroupsPrivs.length) {
 $racUsername = Read-Host -Prompt "Please enter the iDRAC username"
 $racSecurePassword = Read-Host -Prompt "Please enter the iDRAC password" -AsSecureString
 $racPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($racSecurePassword))
+# Depending on your system, you may need to specify the path of the racadm tool
 $racCommand = "racadm -r $fqdn -u '$racUsername' -p '$racPassword' --nocertwarn"
 
 
