@@ -1,22 +1,36 @@
-param ($idracHostname)
+param ($idracHostname, $fqdn)
+# It's really a good idea to have your iDRAC hostname in DNS, especially if you plan on setting up SSO.
+# I set it up to allow one to add the fqdn separately in case you used subdomains like drac1.idrac.example.com
+
+# Should be set to your AD domain
+$domain = "example.com"
 
 if ($idracHostname -eq $null) {
     $idracHostname = Read-Host -Prompt "Please enter the iDRAC hostname"
 }
+if ($fqdn -eq $null) {
+    $fqdn = "$idracHostname.$domain"
+}
 
-$domain = "example.com"
-$fqdn = "$idracHostname.$domain"
+# Comma separated list AD groups
+$adGroups = @("AD Group samAccountName1", "AD Group samAccountName2")
+# Comma separated list of each of the above listed AD group's iDRAC permission level in HEX.  "0x1ff" is for Administrator access.
+$adGroupsPrivs = @("0x1ff", "0x0")
+# Comma separated list of AD Domain Controllers.  Max of 3.
+$dcHosts = @("dc1.example.com", "dc2.example.com", "dc3.example.com")
 
-$adgroup1 = "AD Group SamAccountName"
+# Checks to make sure there are an equal amount of entries in the below arrays.
+if ($adGroups.length -ne $adGroupsPrivs.length) {
+    Throw "Number of adGroups and adGroupsPrivs differs.  Please correct."
+}
 
-$dchost1 = "hostname1.example.com"
-$dchost2 = "hostname2.example.com"
-$dchost3 = "hostname3.example.com"
-
+# Will ask you the currently-used username and password to access racadmin.
+# I got fancy with the AsSecureString bit in an attempt to entering your password into a script a little less bad.
 $racUsername = Read-Host -Prompt "Please enter the iDRAC username"
 $racSecurePassword = Read-Host -Prompt "Please enter the iDRAC password" -AsSecureString
 $racPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($racSecurePassword))
-$racCommand = "racadm -r $fqdn -u $racUsername -p '$racPassword' --nocertwarn"
+$racCommand = "racadm -r $fqdn -u '$racUsername' -p '$racPassword' --nocertwarn"
+
 
 $racadmADEnable = "$racCommand set iDRAC.ActiveDirectory.Enable 1"
 Invoke-Expression $racadmADEnable
@@ -26,23 +40,19 @@ $racadmADLookup = "$racCommand set iDRAC.ActiveDirectory.DCLookupDomainName $dom
 Invoke-Expression $racadmADLookup
 $racadmADGCRoot = "$racCommand set iDRAC.ActiveDirectory.GCRootDomain $domain"
 Invoke-Expression $racadmADGCRoot
-$racadmADUserDomain1 = "$racCommand set iDRAC.UserDomain.1.Name $domain"
-Invoke-Expression $racadmADUserDomain1
-$racadmADGroup1Name = "$racCommand set iDRAC.ADGroup.1.Name '$adgroup1'"
-Invoke-Expression $racadmADGroup1Name
-$racadmADGroup1Domain = "$racCommand set iDRAC.ADGroup.1.Domain '$domain'"
-Invoke-Expression $racadmADGroup1Domain
-$racadmADGroup1Privelege = "$racCommand set iDRAC.ADGroup.1.Privilege '0x1ff'"
-Invoke-Expression $racadmADGroup1Privelege
-$racadmADDC1 = "$racCommand set iDRAC.ActiveDirectory.DomainController1 $dchost1"
-Invoke-Expression $racadmADDC1
-$racadmADDC2 = "$racCommand set iDRAC.ActiveDirectory.DomainController2 $dchost2"
-Invoke-Expression $racadmADDC2
-$racadmADDC3 = "$racCommand set iDRAC.ActiveDirectory.DomainController3 $dchost3"
-Invoke-Expression $racadmADDC3
-$racadmADGC1 = "$racCommand set iDRAC.ActiveDirectory.GlobalCatalog1 $dchost1"
-Invoke-Expression $racadmADGC1
-$racadmADGC2 = "$racCommand set iDRAC.ActiveDirectory.GlobalCatalog2 $dchost2"
-Invoke-Expression $racadmADGC2
-$racadmADGC3 = "$racCommand set iDRAC.ActiveDirectory.GlobalCatalog3 $dchost3"
-Invoke-Expression $racadmADGC3
+$racadmADUserDomain = "$racCommand set iDRAC.UserDomain.1.Name $domain"
+Invoke-Expression $racadmADUserDomain
+for ($tick = 0; $tick -lt ($adGroups.length); $tick++) {
+    $racadmADGroupName = "$racCommand set iDRAC.ADGroup."+($tick + 1)+".Name '"+$adGroups[$tick]+"'"
+    Invoke-Expression $racadmADGroupName
+    $racadmADGroupDomain = "$racCommand set iDRAC.ADGroup."+($tick + 1)+".Domain '$domain'"
+    Invoke-Expression $racadmADGroupDomain
+    $racadmADGroupPrivilege = "$racCommand set iDRAC.ADGroup."+($tick + 1)+".Privilege '"+$adGroupsPrivs[$tick]+"'"
+    Invoke-Expression $racadmADGroupPrivilege
+}
+for ($tick = 0; $tick -lt ($dcHosts.length); $tick++) {
+    $racadmADDC = "$racCommand set iDRAC.ActiveDirectory.DomainController"+($tick + 1)+" "+$dcHosts[$tick]
+    Invoke-Expression $racadmADDC
+    $racadmADGC = "$racCommand set iDRAC.ActiveDirectory.GlobalCatalog"+($tick + 1)+" "+$dcHosts[$tick]
+    Invoke-Expression $racadmADGC
+}

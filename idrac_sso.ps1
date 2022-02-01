@@ -16,9 +16,7 @@ $userPath = "OU=Dell iDRAC,OU=Service Accounts,DC=example,DC=com"
 $saGroup = "CN=Service Accounts,OU=Security Groups,DC=example,DC=com"
 $timeZone = "EST5EDT"
 
-$dchost1 = "dc1.example.com"
-$dchost2 = "dc2.example.com"
-$dchost3 = "dc3.example.com"
+$dcHosts = @("dc1.example.com", "dc2.example.com", "dc3.example.com")
 
 Add-Type -AssemblyName 'System.Web'
 $password = [System.Web.Security.Membership]::GeneratePassword(20, 1)
@@ -30,15 +28,15 @@ try {
     $objADUser = Get-ADUser -Identity "$idracHostname" -Server $dcHostname
 }
 catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
-    New-ADUser -Name "$idracHostname" -DisplayName "$idracHostname" -Description "Service account to allow Kerberos based SSO on Dell iDRAC" -SamAccountName "$idracHostname" -UserPrincipalName "$idracHostname@$domain" -Path "$userPath" -AccountPassword $securePassword -KerberosEncryptionType AES256 -CannotChangePassword $true -PasswordNeverExpires $true -Enabled $true -Server $dcHostname
+    New-ADUser -Name "$idracHostname" -DisplayName "$idracHostname" -Description "Service account to allow Kerberos based SSO on Dell iDRAC" -SamAccountName "$idracHostname" -UserPrincipalName "$idracHostname@$domain" -Path "$userPath" -AccountPassword $securePassword -KerberosEncryptionType AES256 -CannotChangePassword $true -PasswordNeverExpires $true -Enabled $true -Server $dcHosts[0]
 }
 finally {
-    Set-ADUser -Identity "$idracHostname" -DisplayName "$idracHostname" -Description "Service account to allow Kerberos based SSO on Dell iDRAC" -SamAccountName "$idracHostname" -UserPrincipalName "$idracHostname@$domain" -KerberosEncryptionType AES256 -CannotChangePassword $true -PasswordNeverExpires $true -Enabled $true -Server $dcHostname
-    Set-ADAccountPassword -Identity "$idracHostname" -Reset -NewPassword $securePassword -Server $dcHostname
+    Set-ADUser -Identity "$idracHostname" -DisplayName "$idracHostname" -Description "Service account to allow Kerberos based SSO on Dell iDRAC" -SamAccountName "$idracHostname" -UserPrincipalName "$idracHostname@$domain" -KerberosEncryptionType AES256 -CannotChangePassword $true -PasswordNeverExpires $true -Enabled $true -Server $dcHosts[0]
+    Set-ADAccountPassword -Identity "$idracHostname" -Reset -NewPassword $securePassword -Server $dcHosts[0]
 }
 
-Add-ADGroupMember -Identity "$saGroup" -Members "$idracHostname" -Server $dcHostname
-$ktpass = "ktpass -princ $principal -mapuser $idracHostname -mapOp set -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass '$password' -out $keytab /target $dcHostname"
+Add-ADGroupMember -Identity "$saGroup" -Members "$idracHostname" -Server $dcHosts[0]
+$ktpass = "ktpass -princ $principal -mapuser $idracHostname -mapOp set -crypto AES256-SHA1 -ptype KRB5_NT_PRINCIPAL -pass '$password' -out $keytab /target "+$dcHosts[0]
 Invoke-Expression $ktpass
 
 $racUsername = Read-Host -Prompt "Please enter the iDRAC username"
