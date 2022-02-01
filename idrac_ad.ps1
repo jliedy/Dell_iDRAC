@@ -12,7 +12,7 @@ if ($fqdn -eq $null) {
     $fqdn = "$idracHostname.$domain"
 }
 
-# Comma separated list AD groups
+# Comma separated list AD groups.  Max of 5.
 $adGroups = @("AD Group samAccountName1", "AD Group samAccountName2")
 # Comma separated list of each of the above listed AD group's iDRAC permission level in HEX.  "0x1ff" is for Administrator access.
 $adGroupsPrivs = @("0x1ff", "0x0")
