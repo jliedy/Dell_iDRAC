@@ -1,18 +1,19 @@
 param ($idracHostname, $fqdn)
 # It's really a good idea to have your iDRAC hostname in DNS, especially if you plan on setting up SSO.
 # I set it up to allow one to add the fqdn separately in case you used subdomains like drac1.idrac.example.com
+# Command options: .\idrac_ad.ps1 <idrac_hostname> [<fqdn>]
 
 # Should be set to your AD domain
 $domain = "example.com"
 
-if ($idracHostname -eq $null) {
+if ($null -eq $idracHostname) {
     $idracHostname = Read-Host -Prompt "Please enter the iDRAC hostname"
 }
-if ($fqdn -eq $null) {
+if ($null -eq $fqdn) {
     $fqdn = "$idracHostname.$domain"
 }
 
-# Comma separated list AD groups
+# Comma separated list AD groups.  Max of 5.
 $adGroups = @("AD Group samAccountName1", "AD Group samAccountName2")
 # Comma separated list of each of the above listed AD group's iDRAC permission level in HEX.  "0x1ff" is for Administrator access.
 $adGroupsPrivs = @("0x1ff", "0x0")
