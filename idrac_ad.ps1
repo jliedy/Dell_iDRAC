@@ -1,14 +1,15 @@
 param ($idracHostname, $fqdn)
 # It's really a good idea to have your iDRAC hostname in DNS, especially if you plan on setting up SSO.
 # I set it up to allow one to add the fqdn separately in case you used subdomains like drac1.idrac.example.com
+# Command options: .\idrac_ad.ps1 <idrac_hostname> [<fqdn>]
 
 # Should be set to your AD domain
 $domain = "example.com"
 
-if ($idracHostname -eq $null) {
+if ($null -eq $idracHostname) {
     $idracHostname = Read-Host -Prompt "Please enter the iDRAC hostname"
 }
-if ($fqdn -eq $null) {
+if ($null -eq $fqdn) {
     $fqdn = "$idracHostname.$domain"
 }
 
