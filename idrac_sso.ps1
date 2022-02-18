@@ -21,6 +21,8 @@ $keytab = "$idracHostname.keytab"
 $userPath = "OU=Dell iDRAC,OU=Service Accounts,DC=example,DC=com"
 # AD group to add to the service account.  If one exists, uncomment the below line and change the value.
 #$saGroup = "CN=Service Accounts,OU=Security Groups,DC=example,DC=com"
+# Set whether or not iDRAC should automatically create a DNS entry on the domain controllers.
+$setDNSRegister = $false
 # Set to $true or $false depending on whether or not you prefer to set up NTP for the iDRAC using this script
 $setNTP = $true
 # If $setNTP is $true, this will be used to set the timezone for the iDRAC
@@ -62,12 +64,23 @@ $racPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.Inter
 # Depending on your system, you may need to specify the path of the racadm tool
 $racCommand = "racadm -r $fqdn -u '$racUsername' -p '$racPassword' --nocertwarn"
 
+# This command enables or disables the ability for the iDRAC to manage its own DNS entry on the domain controllers
+# I've seen odd behavior from this functionality so I'm adding the ability to enable/disable this functionality
+if ($setDNSRegister) {
+    $racadmSetDNSRegister = "$racCommand set iDRAC.NIC.DNSRegister enabled"
+    Invoke-Expression $racadmSetDNSRegister
+} else {
+    $racadmSetDNSRegister = "$racCommand set iDRAC.NIC.DNSRegister disabled"
+    Invoke-Expression $racadmSetDNSRegister
+}
 # This command uploads the keytab to the iDRAC.  I've had this fail on iDRAC9, so you may need to manually add the keytab
 # to the iDRAC via the gui.
 $racadmKeytab = "$racCommand krbkeytabupload -f $keytab"
 Invoke-Expression $racadmKeytab
 $racadmEnableSSO = "$racCommand set iDRAC.ActiveDirectory.SSOEnable 1"
 Invoke-Expression $racadmEnableSSO
+# This section configures NTP on the iDRAC to use your domain controllers as the time source
+# Time sync is absolutely necessary to make SSO work.
 if ($setNTP) {
     $racadmSetTimezone = "$racCommand set iDRAC.Time.TimeZone $timeZone"
     Invoke-Expression $racadmSetTimezone
